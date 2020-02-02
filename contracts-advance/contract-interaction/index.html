@@ -1,0 +1,237 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Contract Interaction</title>
+
+		<link rel="stylesheet" href="../../../reveal.js/css/reset.css">
+		<link rel="stylesheet" href="../../../reveal.js/css/reveal.css">
+		<link rel="stylesheet" href="../../css/main.css">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="../../../reveal.js/lib/css/monokai.css">
+		
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? '../../../reveal.js/css/print/pdf.css' : '../../../reveal.js/css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<section data-markdown><textarea data-template>
+					### Contract Interactions
+					#### Advanced Smart Contract
+					<div class="author">Yuet Loo Wong</div>
+				</textarea></section>
+				<section data-markdown><textarea data-template>
+					## Topics
+					- ABI
+					- Call, StaticCall, DelegateCall
+					- Context
+				</textarea></section>
+
+				<section data-markdown><textarea data-template>
+					*A contract calling functions of another contract*
+					![external contract call](./externalcall.svg "External Contract Call")
+				</textarea></section>
+
+				<section data-markdown><textarea data-template>
+					### Application Binary Interface (ABI)
+					* ABI is the standard way to interact with contract
+					* ABI = function selector + arguments
+				</textarea></section>
+
+				<section data-markdown><textarea data-template>
+					### Function selector
+					The first 4 bytes of the keccak256 hash of the normalized function signature
+				</textarea></section>
+
+				<section data-markdown><textarea data-template>
+					### Message Call
+					- When a contract calls a function of another contract, it produces a message call
+					- Message call is not a transaction; It does not get recorded in a block in the blockchain
+					- Every call has a sender, a recipient, a payload, a value, and an amount of gas. 
+				</textarea></section>
+
+				<section data-markdown><textarea data-template>
+					### Low Level External Function Calls
+					- Call 
+					- StaticCall
+					- DelegateCall
+				</textarea></section>
+
+				<section data-markdown><textarea data-template>
+					### When to Use Low Level Function Calls?
+					- When the ABI is not known</li>
+					- When you want to bypass the gas stipend imposed on .transfer() or .send()
+					- Avoid using these low level calls if possible as they bypass safety checks
+					- Refer to the <a href="https://solidity.readthedocs.io/en/v0.6.2/units-and-global-variables.html#members-of-address-types" target="_blank">solidity docs</a> for more details
+				</textarea></section>
+
+
+				<section>
+					<h3>Call</h3>
+					<pre><code data-trim>
+						bytes memory args = abi.encodeWithSignature("set(uint256)", newPrice);
+						(bool success, bytes memory retData) = feed.call.value(msg.value)(args);	
+					</code></pre>
+				</section>
+
+				<section>
+					<h3>StaticCall</h3>
+					Same as <span class="highlight">call</span>, but will revert on state changes
+					
+					<pre>
+						<code data-trim>
+							bytes memory args = abi.encodeWithSignature("set(uint256)", newPrice);
+							(bool success, bytes memory retData) = feed.staticcall(args);		
+						</code>
+					</pre>					
+				</section>
+
+				<section>
+					<h3> DelegateCall </h3>
+					<ul>
+						<li>same as <span class="highlight">call</span>, but will run in the context of the calling contract
+						</li>
+						<li>how library is implemented</li>
+					</ul>					
+					<pre>
+						<code data-trim>
+						bytes memory args = abi.encodeWithSignature("set(uint256)", newPrice);
+						(bool success, bytes memory retData) = feed.delegatecall(args);
+						</code>
+					</pre>					
+				</section>
+
+				<section data-markdown>
+					### Context
+					- The environment/data available to the function during execution
+						* account (storage)
+						* stack
+						* memory
+						* message call data
+				</section>
+
+				<section data-markdown>
+					### Account
+					* 2 types of accounts:
+						- externally owned account (EOA)
+						- contract account
+					* Account contains: balance, a nonce, bytecode, and stored data (storage)
+					* EOA has empty bytecode and storage
+				</section>
+
+				<section>
+					<h3>Account Storage</h3>
+					<ul>
+						<li>This is where state variables are stored</li>
+						<li>It is persistent between function calls and transactions</li>
+						<li>It is a key-value mapping of 2<sup>256</sup> keys; each value is 32 bytes long</li>
+					</ul>
+				</section>
+
+				<section data-markdown>
+					### Stack
+					* All computations are performed on the stack
+					* It has a maximum of 1024 elements
+					* Access to stack is limited to the top elements
+					* Access to elements by pop/push to stack		
+				</section>
+
+				<section data-markdown>
+					### Memory
+					* Memory is volatile
+					* It is mainly used to store data during execution
+					* Each message call starts with a cleared memory	
+				</section>
+
+				<section>
+					<h3>Message Call Data</h3>
+					<ul>
+						<li><span class="highlight">msg.data</span>: the input data for the function call</li>
+						<li><span class="highlight">msg.sender</span>: the sender of the message</li>
+						<li><span class="highlight">msg.value</span>: number of wei sent with the message</li>
+					</ul>
+				</section>
+
+				<section>
+					<h3>This</h3>
+					<ul>
+						<li><span class="highlight">this</span> refers to the current contract for non-delegated calls</li>
+						<li><span class="highlight">this</span> refers to the caller contract for delegated call</li>
+					</ul>
+				</section>
+
+				<section>
+					<h3>Caller</h3>
+					<ul>
+						<li><span class="highlight">tx.origin</span> is the sender of the transaction (full call chain)</li>
+						<li><span class="highlight">msg.sender</span> is the sender of the current message call</li>
+					</ul>
+				</section>
+
+				<section data-markdown>
+					### Non-Delegated Message Call
+					![non-delegatecall](./non-delegatecall.svg "Non Delegate Call")
+				</section>
+
+				<section data-markdown>
+					### Delegated Message Call
+					![delegatecall](./delegatecall.svg "Delegate Call")
+				</section>
+
+				<section data-markdown>
+					### Sender Context
+					![sendercontext](./sender-context.svg "Sender Context")
+				</section>
+	
+				<section>
+					<h3>State Variables Storage Layout</h3>
+					<ul>
+						<li>Solidity generates code that saves variable values in their declaration order.</li>
+						<li>Variable <span class="highlight">first</span> was declared first, it’s stored in slot 0</li>
+					</ul>
+					<pre><code data-trim>
+						contract Sample {
+							uint first;    // storage slot 0
+							uint second;   // storage slot 1
+						}
+					</code></pre>
+				</section>
+				<section>
+					<h3>Lab</h3>
+					Following the instructions on the readme file of <a href="https://github.com/ethereumgb/proxy-delegate" target="_blank">proxy-delegate</a>
+				</section>
+			</div>
+		</div>
+
+		<script src="../../../reveal.js/js/reveal.js"></script>
+
+		<script>
+			// More info about config & dependencies:
+			// - https://github.com/hakimel/reveal.js#configuration
+			// - https://github.com/hakimel/reveal.js#dependencies
+			Reveal.initialize({
+				width: "100%",
+				margin: 0,
+				maxScale: 0.9,
+				hash: true,
+				slideNumber: 'c/t',
+				dependencies: [
+					{ src: '../../../reveal.js/plugin/markdown/marked.js'},
+					{ src: '../../../reveal.js/plugin/markdown/markdown.js'},
+					{ src: '../../../reveal.js/plugin/highlight/highlight.js' },
+					{ src: '../../../reveal.js/plugin/notes/notes.js', async: true }
+				]
+			});
+		</script>
+	</body>
+</html>
