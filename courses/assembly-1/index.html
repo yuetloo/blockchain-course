@@ -1,0 +1,223 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Assembly Part 1</title>
+
+		<link rel="stylesheet" href="../../../reveal.js/css/reset.css">
+		<link rel="stylesheet" href="../../../reveal.js/css/reveal.css">
+		<link rel="stylesheet" href="../../css/main.css">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="../../../reveal.js/lib/css/monokai.css">
+		
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? '../../../reveal.js/css/print/pdf.css' : '../../../reveal.js/css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<section data-markdown><textarea data-template>
+					### Solidity Inline Assembly (Part 1)
+					#### Advanced Smart Contract
+					<div class="author">Yuet Loo Wong</div>
+				</textarea></section>
+				<section data-markdown><textarea data-template>
+					## Topics
+					- Solidity Inline Assembly
+						- Structure
+						- Data
+						- Logic
+				</textarea></section>
+
+				<section data-markdown>
+					## Solidity Inline Assembly
+					- Low level language called [Yul](https://solidity.readthedocs.io/en/v0.6.2/yul.html)
+					- Provides low level access to the [EVM](https://solidity.readthedocs.io/en/v0.6.2/introduction-to-smart-contracts.html#index-6)
+					- Bypasses safety features and checks of Solidity
+					- Should only use it for tasks that need it
+				</section>
+
+				<section>
+					<h2>Inline Assembly Block</h2>
+					<ul><li>Interleave Solidity statements with inline assembly</li>
+						<li>An inline assembly block is marked by <span class='highlight'>assembly { ... }</span></li>
+					</ul> 					
+					<pre><code data-trim>
+						pragma solidity ^0.6.1;
+						contract Hello {
+							function SayHi() {
+								assembly {
+									// assembly code here
+								}
+							}
+						}
+					</code></pre>
+				</section>
+
+				<section data-markdown="">
+					## Comments
+					- Use the <span class="highlight">//</span> or <span class="highlight">/* */</span> to denote comments
+					
+					```
+								assembly {
+									// this is a comment
+									/* this is a multiline 
+									*  comment
+									*/
+								}
+					```
+				</section>
+
+
+				<section data-markdown>
+					## Variables
+					- Use the "let" keyword to declare variables
+					- Variable is only visible within the block where it was defined
+					- Variable will be assigned 0 if not initialized
+					
+					
+					```
+						assembly {
+							let x := 1
+							let y         // initialized to 0
+						}
+					```
+				</section>
+
+				<section>
+					<h3> If </h3>
+					<ul>
+						<li>Conditionally execute code</li>
+						<li>No “else” block</li>
+					</ul> 
+					<p>if eq(value, 0) { value := 3 }</p>
+				</section>
+
+				<section data-markdown>
+					### Switch
+					- Similar to "if", but with more branching options
+					- Fallback or default case: `default`
+
+					```
+							assembly {
+								switch x
+									case 0 { x := 1 }
+									default { x := add(x,1) }
+							}
+					```
+
+				</section>
+
+				<section data-markdown>
+					### Loop
+					- Loop is available for repeating operations
+					- break: exit the Loop
+					- continue: skip to next iteration
+
+					```
+							let x := 1
+							for { let i := 0 } lt(i, 0x3) { i := add(i, 1) } {
+								x := mul(x, 2)
+								if gt(x, 3) { break }
+							}
+					```
+
+				</section>
+
+				<section data-markdown>
+					### Builtin Functions
+					- add(), sub(), mul(), div(), eq(), lt(), etc
+					- builtin functions: [Solidity Documentation](https://solidity.readthedocs.io/en/v0.6.2/yul.html#evm-dialect)
+				</section>
+
+				<section data-markdown>
+					### OpCode
+					- Operation code
+					- Machine language instructions
+					- Builtin functions are EVM opcodes
+					- Opcodes in [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)
+						- search for "Arithmetic Operations"
+
+				</section>
+
+				<section>
+					<img src="Opcode-screenshot.png"/>
+				</section>
+
+
+				<section data-markdown>
+					### Data Sanity
+					- If you access variables of a type that spans less than 256 bits (e.g. uint64, address, bytes16 or byte), 
+						bits not part of the type, may not be `zeroed`
+					- Always clear data before using it
+					```
+					uint32 x = f(); 
+					assembly { 
+						x := and(x, 0xffffffff) 
+						/* now use x */ 
+					}
+					```
+				</section>
+
+				<section data-markdown>
+					### Signed Data
+					- Use signed builtin funcitons to process signed data
+					- sdiv(), smod(), slt(), sgt(), sar(), signextend()
+					- Use `signextend` builtin function to clean signed data
+					- Would x be 100 or 99 from the following code?
+
+					```
+					int a = -3;
+					assembly { 
+						let x := 100
+						if lt(a, 0) {
+							x := 99
+						}
+					}
+					```
+				</section>
+
+				<section data-markdown>
+					### Benefits of Inline Assembly
+					- Code can be more gas efficient
+					- Some operations only available in assembly
+				</section>
+
+				<section data-markdown>
+					### Lab
+					Following the instructions on the readme file of <a href="https://github.com/ethereumgb/assembly-loop" target="_blank">assembly-loop</a>
+				</section>
+			</div>
+		</div>
+
+		<script src="../../../reveal.js/js/reveal.js"></script>
+
+		<script>
+			// More info about config & dependencies:
+			// - https://github.com/hakimel/reveal.js#configuration
+			// - https://github.com/hakimel/reveal.js#dependencies
+			Reveal.initialize({
+				width: "100%",
+				margin: 0,
+				maxScale: 0.9,
+				hash: true,
+				slideNumber: 'c/t',
+				dependencies: [
+					{ src: '../../../reveal.js/plugin/markdown/marked.js'},
+					{ src: '../../../reveal.js/plugin/markdown/markdown.js'},
+					{ src: '../../../reveal.js/plugin/highlight/highlight.js' },
+					{ src: '../../../reveal.js/plugin/notes/notes.js', async: true }
+				]
+			});
+		</script>
+	</body>
+</html>
