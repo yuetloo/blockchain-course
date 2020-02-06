@@ -47,7 +47,7 @@
 				</section>
 
 				<section>
-					<h2>Inline Assembly Block</h2>
+					<h2>Assembly Block</h2>
 					<ul><li>Interleave Solidity statements with inline assembly</li>
 						<li>An inline assembly block is marked by <span class='highlight'>assembly { ... }</span></li>
 					</ul> 					
@@ -99,7 +99,7 @@
 						<li>Conditionally execute code</li>
 						<li>No “else” block</li>
 					</ul> 
-					<p>if eq(value, 0) { value := 3 }</p>
+					<p class="code">if eq(value, 0) { value := 3 }</p>
 				</section>
 
 				<section data-markdown>
@@ -137,22 +137,70 @@
 					### Builtin Functions
 					- add(), sub(), mul(), div(), eq(), lt(), etc
 					- builtin functions: [Solidity Documentation](https://solidity.readthedocs.io/en/v0.6.2/yul.html#evm-dialect)
+					- Builtin functions are EVM opcodes
 				</section>
 
-				<section data-markdown>
-					### OpCode
-					- Operation code
-					- Machine language instructions
-					- Builtin functions are EVM opcodes
-					- Opcodes in [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)
-						- search for "Arithmetic Operations"
+				<section>
+					<h3>OpCode</h3>
+					<blockquote cite="https://en.wikipedia.org/wiki/Opcode">
+						OpCode (Operation Code) is a machine instruction that specifies the operation to be performed - <a href="https://en.wikipedia.org/wiki/Opcode" target="_blank">Wikipedia</a>
+					</blockquote>
+				</section>
 
+				<section>
+					<h3>OpCode References</h3>
+					<ul>
+						<li>Opcodes in <a href="https://ethereum.github.io/yellowpaper/paper.pdf" target="_blank">Ethereum Yellow Paper</a>
+							<ul><li>search for "Arithmetic Operations"</li></ul>
+						</li>
+						<li>SHL, SHR, SAR: <a href="https://eips.ethereum.org/EIPS/eip-145" target="_blank">EIP 145</a>
+							<ul><li>Shift Left, Shift Right, Signed Shift Right</li></ul>
+						</li>
+						<li>CREATE2: <a href="https://eips.ethereum.org/EIPS/eip-1014" target="_blank">EIP 1014</a>
+						</li>
+						<li>EXTCODEHASH: <a href="https://eips.ethereum.org/EIPS/eip-1052" target="_blank">EIP 1052</a>
+							<ul><li>code hash of an address</li></ul>
+						</li>
+					</ul>
 				</section>
 
 				<section>
 					<img src="Opcode-screenshot.png"/>
 				</section>
 
+				<section>
+					<h3>extcodehash</h3>
+					<ul>
+						<li>Used in openzeppelin <a href="https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/Address.sol#L24" target="_blank">IsContract()</a>
+							utilitity
+						</li>
+						<li>Returns the code hash of a contract</li>
+					</ul>
+					<p class="code">
+						assembly { codehash := extcodehash(accountAddress) }
+					</p>
+				</section>
+
+				<section data-markdown>
+					### Two's Complement
+					- Signed integers are represented in two's complement
+					- Two's complement of x = ~x + 1 = ~( x - 1)
+					- fundamental arithmetic operations are the same for signed and unsigned integers
+					- No negative 0
+				</section>
+
+				<section>
+					<h3> Bitwise Operations </h3>
+					<ul>
+						<li>Operate at the bit level</li>
+						<li>AND, OR, XOR, NOT, SHL, SHR, SAR</li>
+						<li>Check for power of 2: v && !(v & (v - 1))</li>
+						<li>x >> y == x * 2<sup>y</sup></li>
+						<li>x << y == x / 2<sup>y</sup></li>
+						<li><a href="https://www.codementor.io/@erikeidt/bit-twiddling-understanding-bit-operations-iqj68ynb7" target="_blank">Bit Operations</a></li>
+						<li><a href="https://graphics.stanford.edu/~seander/bithacks.html#DetermineIfPowerOf2" target="_blank">Bit Twiddling Hacks</a></li>
+					</ul>
+				</section>
 
 				<section data-markdown>
 					### Data Sanity
@@ -161,11 +209,21 @@
 					- Always clear data before using it
 					```
 					uint32 x = f(); 
-					assembly { 
+					assembly {
 						x := and(x, 0xffffffff) 
 						/* now use x */ 
 					}
 					```
+				</section>
+
+				<section>
+					<h2>Gas Fee</h2>
+					<ul>
+						<li>Fee schedule in <a href="https://ethereum.github.io/yellowpaper/paper.pdf" target="_blank">Ethereum Yellow Paper</a></li>
+						<li>MUL/DIV is more expensive than bitwise shifting
+							<ul><li>e.g. MUL costs 5 gas; SHL costs 3 gas</li></ul>
+						</li>
+					</ul>
 				</section>
 
 				<section data-markdown>
@@ -176,13 +234,13 @@
 					- Would x be 100 or 99 from the following code?
 
 					```
-					int a = -3;
-					assembly { 
-						let x := 100
-						if lt(a, 0) {
-							x := 99
+						int a = -3;
+						assembly {
+							let x := 100
+							if lt(a, 0) {
+								x := 99
+							}
 						}
-					}
 					```
 				</section>
 
