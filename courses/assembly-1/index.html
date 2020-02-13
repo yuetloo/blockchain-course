@@ -33,9 +33,11 @@
 				<section data-markdown><textarea data-template>
 					## Topics
 					- Solidity Inline Assembly
-						- Structure
-						- Data
-						- Logic
+						- Introduction
+						- Syntax
+						- Flow
+						- Opcodes
+						- Benefits
 				</textarea></section>
 
 				<section data-markdown>
@@ -83,8 +85,7 @@
 					- Use the "let" keyword to declare variables
 					- Variable is only visible within the block where it was defined
 					- Variable will be assigned 0 if not initialized
-					
-					
+					-			
 					```
 						assembly {
 							let x := 1
@@ -92,6 +93,20 @@
 						}
 					```
 				</section>
+
+				<section data-markdown><textarea data-template>
+					## Literals
+					- decimal or hexadecimal
+					- strings up to 32 characters
+					-
+					```
+						assembly {
+							let a := 2
+							let b := 0x03
+							let c := "hello world"
+						}
+					```
+				</textarea></section>
 
 				<section>
 					<h3> If </h3>
@@ -216,16 +231,6 @@
 					```
 				</section>
 
-				<section>
-					<h2>Gas Fee</h2>
-					<ul>
-						<li>Fee schedule in <a href="https://ethereum.github.io/yellowpaper/paper.pdf" target="_blank">Ethereum Yellow Paper</a></li>
-						<li>MUL/DIV is more expensive than bitwise shifting
-							<ul><li>e.g. MUL costs 5 gas; SHL costs 3 gas</li></ul>
-						</li>
-					</ul>
-				</section>
-
 				<section data-markdown>
 					### Signed Data
 					- Use signed builtin funcitons to process signed data
@@ -242,6 +247,22 @@
 							}
 						}
 					```
+				</section>
+
+				<section data-markdown>
+					### signextend
+					- Sign extension
+					- Increase the number of bits of a binary number
+					- Preserve the sign (+/-) of the number
+				</section>	
+				<section>
+					<h2>Gas Fee</h2>
+					<ul>
+						<li>Fee schedule in <a href="https://ethereum.github.io/yellowpaper/paper.pdf" target="_blank">Ethereum Yellow Paper</a></li>
+						<li>Some opcodes are more expensive than others
+							<ul><li>e.g. multiplication costs 5 gas; shift left costs 3 gas</li></ul>
+						</li>
+					</ul>
 				</section>
 
 				<section data-markdown>
