@@ -108,6 +108,23 @@
 					```
 				</textarea></section>
 
+				<section data-markdown><textarea data-template>
+					### Function
+					- Takes arguments from stack and put results on stack
+					- Returning multiple values: let a, b := f(x)
+					```
+					function Times2(int input) public pure returns(int result ) {
+						assembly {
+							function double(val) -> res {
+								res := shl(1, val)
+							}
+							result := double(input)
+						}
+					}
+					```
+
+				</textarea></section>
+
 				<section>
 					<h3> If </h3>
 					<ul>
