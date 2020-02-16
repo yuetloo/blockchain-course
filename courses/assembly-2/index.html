@@ -1,0 +1,276 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Assembly Part 2</title>
+
+		<link rel="stylesheet" href="../../reveal.js/css/reset.css">
+		<link rel="stylesheet" href="../../reveal.js/css/reveal.css">
+		<link rel="stylesheet" href="../../css/main.css">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="../../reveal.js/lib/css/monokai.css">
+		
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? '../../reveal.js/css/print/pdf.css' : '../../reveal.js/css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<section data-markdown><textarea data-template>
+					### Solidity Assembly (Part 2)
+					#### Advanced Smart Contract
+					<div class="author">Yuet Loo Wong</div>
+				</textarea></section>
+				<section data-markdown><textarea data-template>
+					### Topics
+					- Stack
+					- Memory
+					- Storage
+					- Calldata
+				</textarea></section>
+				
+				<section data-markdown><textarea data-template>
+					## EVM
+					- The Ethereum Virtual Machine
+						- The runtime environment for smart contracts
+						- A sandboxed, isolated environment
+						- Code running inside the EVM has no access to network, filesystem or other processes
+				</textarea></section>
+
+				<section data-markdown><textarea data-template>
+					## Stack
+					- EVM is a stack machine
+					- All instructions are run on a <span class="highlight">stack</span>
+					- Only the top part of a stack can be accessed
+					- Stack max size is 1024 elements
+					- Each stack element is 256 bits wide
+					- Stack operations: PUSH, POP, SWAP, DUP
+				</textarea></section>
+
+				<section data-markdown><textarea data-template>
+					## PUSH and POP
+					- PUSH1: add 1 byte item on stack
+					- PUSH2: add 2 bytes item on stack
+					- PUSH3-32: add 3 to 32 bytes item on stack
+					- POP: remove an item from the stack
+				</textarea></section>
+
+				<section data-markdown><textarea data-template>
+					## SWAP and DUP
+					- SWAP1: exchange 1st and 2nd stack items
+					- SWAP2: exchange 1st and 3rd stack items
+					- SWAP3-16: exchange 1st and 4th (17th) stack items
+					- DUP1: Duplicate 1st stack item
+					- DUP2-16: Duplicate 2nd-16th stack item
+				</textarea></section>
+
+				<section data-markdown><textarea data-template>
+					### Opcodes not available in Yul
+					Since Yul manages local variables and control-flow, opcodes that interfere with these features are not available. This includes the dup, swap, jump, labels, push instructions
+					</textarea>
+				</section>
+
+				<section data-markdown><textarea data-template>
+					## Stack Demo
+					</textarea>
+				</section>
+
+				<section data-markdown><textarea data-template>
+					## Memory
+					- An expandable byte-array used to store data
+					- Expanding memory costs gas
+					- Memory is expanded by 256-bit
+					- Volatile, only available during execution
+					
+					</textarea>
+				</section>
+
+				<section data-markdown><textarea data-template>
+					## Memory Access Functions
+					- `MLOAD(o)`: load word from memory onto stack
+						- o: memory offset
+					- `MSTORE(o,v)`: store 256-bit word into memory
+						- o: memory offset
+						- v: value from stack
+					- `MSTORE8(o,v)`: store a byte into memory
+					</textarea>
+				</section>
+
+				<section data-markdown><textarea data-template>
+					## Solidity Memory Layout
+					- Solidity reserves memory slots as follow:
+						- 0x00 - 0x3f (64 bytes): scratch space, for short term usage
+						- 0x40 - 0x5f (32 bytes): free memory pointer
+						- 0x60 - 0x7f (32 bytes): zero for empty dynamic memory arrays
+						- 0x80: initial value of the free memory pointer
+					- <a href="https://solidity.readthedocs.io/en/v0.6.2/miscellaneous.html#layout-in-memory" target="_blank">Solidity Documentation</a> on Memory Layout
+					</textarea>
+				</section>
+
+				<section data-markdown><textarea data-template>
+					## Memory Example
+					
+					```
+					contract Sample {
+						function getData(uint value) public view returns (bytes32 output) {
+							assembly {
+								function allocate(length) -> pos {
+									let freePointer := 0x40
+									pos := mload(freePointer)
+									mstore(freePointer, add(pos,length))
+								}
+								
+								let dataSize := 0x20  // 32 bytes
+								let offset := allocate(dataSize)
+								mstore(offset, value)
+								return(offset, dataSize)
+							}
+						}
+					}
+					```
+					
+					</textarea>
+				</section>
+
+				<section data-markdown><textarea data-template>
+					## CallData
+					- Read only byte-array containing msg.data
+					- Data is ABI encoded
+					- The first 4 bytes is the function selector
+					- Arguments are padded to multiples of 32 bytes
+					- <a href='https://solidity.readthedocs.io/en/v0.6.2/miscellaneous.html#layout-of-call-data' target="_blank">Layout of CallData</a>
+					</textarea>
+				</section>
+
+				<section data-markdown><textarea data-template>
+					## CallData Access Functions
+					- `CALLDATACOPY(m, c, n)`: 
+						- load n bytes of call data from offset c into memory offset m
+					- `CALLDATALOAD(m)`: load 32 bytes calldata onto stack
+					- `CALLDATASIZE()`: load call data size onto stack
+					</textarea>
+				</section>
+
+				<section data-markdown><textarea data-template>
+					## Return
+					- End execution, return output data
+					- return(m,l): 
+						- m: memory offset
+						- l: length of data in byte
+					</textarea>
+				</section>
+
+				<section data-markdown><textarea data-template>
+					## CallData Demo
+					```
+					contract Sample {
+						// return calldata as bytes output
+						function getData(uint input) public view returns (bytes memory output) {
+							assembly {
+								let base := mload(0x40)
+								mstore(add(base, 0x00), 0x20) // pointer to data
+								mstore(add(base, 0x20), 36) // data length
+								calldatacopy(add(base, 0x40), 0, 36)  // data from byte 0
+								return(base, 0x80)
+							}
+						}
+					}
+					```
+					</textarea>
+				</section>
+
+				<section data-markdown><textarea data-template>
+					## Storage
+					- State variables stored here
+					- Key-value store
+						- maps 256-bit words to 256-bit words
+					- Persistent storage in an account
+					</textarea>
+				</section>
+
+				<section data-markdown><textarea data-template>
+					## State Variable Access
+					- <span class="highlight">_slot</span>: storage slot for the variable
+					- <span class="highlight">_offset</span>: byte offset for the variable
+					</textarea>
+				</section>
+
+				<section data-markdown><textarea data-template>
+					## SSTORE/SLOAD
+					- sstore(p,v): save a word to storage
+						- p: storage slot
+						- v: value to store
+					- sload(p): load a word from storage to stack
+					</textarea>
+				</section>
+
+				<section data-markdown><textarea data-template>
+					## State Variable Storage Layout
+					- Statically-sized variables stored from position <span class="highlight">0</span>
+					- Variables less than 32 bytes are packed in a single slot
+					- Refer to other rules in <a href="https://solidity.readthedocs.io/en/v0.6.2/miscellaneous.html#layout-of-state-variables-in-storage" target="_blank">Solidity Documentation</a>
+					</textarea>
+				</section>
+
+				<section data-markdown><textarea data-template>
+					## Storage Demo
+					```
+					contract Sample {
+						uint8 data1 = 1;
+						uint8 data2 = 2;
+						uint8 data3 = 3;
+						uint8 data4 = 4;
+						
+						// get data3 and return it as ouput
+						function getData() public view returns(bytes32){
+							assembly {
+								let data := sload(data3_slot)
+								let result := and(shr(shl(3,data3_offset), data), 0xff)
+								mstore(0, result)
+								return(0,32)
+							}
+						}
+					}
+					```
+					</textarea>
+				</section>
+
+				<section data-markdown><textarea data-template>
+					## Lab
+					Following the instructions on the readme file of <a href="https://github.com/ethereumgb/assembly-storage" target="_blank">assembly-storage</a>
+					</textarea>
+				</section>
+			</div>
+		</div>
+
+		<script src="../../reveal.js/js/reveal.js"></script>
+
+		<script>
+			// More info about config & dependencies:
+			// - https://github.com/hakimel/reveal.js#configuration
+			// - https://github.com/hakimel/reveal.js#dependencies
+			Reveal.initialize({
+				width: "100%",
+				margin: 0,
+				maxScale: 0.9,
+				hash: true,
+				slideNumber: 'c/t',
+				dependencies: [
+					{ src: '../../reveal.js/plugin/markdown/marked.js'},
+					{ src: '../../reveal.js/plugin/markdown/markdown.js'},
+					{ src: '../../reveal.js/plugin/highlight/highlight.js' },
+					{ src: '../../reveal.js/plugin/notes/notes.js', async: true }
+				]
+			});
+		</script>
+	</body>
+</html>
