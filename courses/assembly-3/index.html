@@ -1,0 +1,281 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Assembly Part 3</title>
+
+		<link rel="stylesheet" href="../../reveal.js/css/reset.css">
+		<link rel="stylesheet" href="../../reveal.js/css/reveal.css">
+		<link rel="stylesheet" href="../../css/main.css">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="../../reveal.js/lib/css/monokai.css">
+		
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? '../../reveal.js/css/print/pdf.css' : '../../reveal.js/css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<section data-markdown><textarea data-template>
+					### Solidity Assembly (Part 3)
+					#### Advanced Smart Contract
+					<div class="author">Yuet Loo Wong</div>
+				</textarea></section>
+				<section data-markdown><textarea data-template>
+          ### Topics
+          - Memory layout for arrays
+          - Storage layout for arrays and mappings
+          - Opcodes for Contract Code Access
+
+				</textarea></section>
+				
+				<section data-markdown><textarea data-template>
+          ## Memory Arrays
+          - Elements in arrays occupy multiples of 32 bytes
+            - except for <span class="highlight">string</span> and <span class="highlight">bytes</span> 
+          - Dynamic array 
+            - the length is stored in the first slot
+            - elements are stored in the following slots
+				</textarea></section>
+
+        <section data-markdown><textarea data-template>
+          ### Length of Dynamic Memory Array
+          - stored in the first slot
+          ```
+          function getLength(uint[] memory input)       
+            public pure returns(bytes32 result) 
+            {
+              assembly {
+                result := mload(input)
+              }
+            }
+          ```
+        </textarea></section>
+
+
+        <section data-markdown><textarea data-template>
+          ### Fixed Length Memory Array
+          - elements start in the first slot
+          -
+          ```
+          function getFirstElement( byte[3] memory data )     
+            public pure returns(bytes32) {
+            assembly {
+                mstore(0, mload(data))
+                return(0,32)
+            }
+          }
+          ```
+        </textarea></section>
+
+        <section data-markdown><textarea data-template>
+          ### String and Bytes in Memory
+          - elements start in second slot
+          - elements are tightly packed
+          - each element do not occupy 32 bytes 
+          -
+          ```
+          function getFirstElement( bytes memory data )     
+            public pure returns(bytes32) {
+            assembly {
+                mstore(0, mload(add(data,32)))
+                return(0,32)
+            }
+          }
+          ```
+        </textarea></section>
+        
+        <section data-markdown><textarea data-template>
+          ## Multi-dimensional Memory Array
+          - length is stored in the first slot
+          - subsequent slots store pointers to memory arrays
+          -
+          ```
+          function get2DArrayLength(  )     
+            public pure returns(bytes32) {
+                uint size = 3;
+                uint8[][] memory data = new uint8[][](size);    
+                for(uint i = 0; i < size; i++) {
+                  data[i] = new uint8[](4);
+                  data[i][0] = 88;
+                }     
+                assembly {
+                  mstore(0, mload(data))
+                  return(0, 32)
+                }
+            }
+          ```
+        </textarea></section>
+
+        <section data-markdown><textarea data-template>
+            ## Dynamic Array in Storage
+            - the array length is in the storage slot 'p'
+            - the nth-element is in slot: keccak256(p) + n
+        </textarea></section>
+
+        <section data-markdown><textarea data-template>
+          ### Dynamic Array Storage Example
+          - <a href="https://github.com/yuetloo/EthereumSmartContracts/blob/master/DynamicArrayStorage.sol">Github Source</a>
+          ```
+          contract DynamicArrayStorage {
+            struct Store { uint8 x; uint8 y; }
+            Store[] data;            
+            constructor() public {
+                data.push(Store(0x22, 0x33));
+            }
+            function getData(uint slot) public view returns (bytes32 result) {
+                assembly {
+                  mstore(0, data_slot)
+                  result := sload(add(keccak256(0,0x20),slot))
+                }        
+            }
+          }
+          ```
+        </textarea></section>
+
+        <section data-markdown><textarea data-template>
+          ### Dynamic Array Vunerability
+          - Doug Hoyte's <a href="https://github.com/Arachnid/uscc/tree/master/submissions-2017/doughoyte" target="_blank">Underhanded Solidity Contest</a>  Winning Submission
+          -
+          ```
+          contract MerdeToken {
+            address public owner;
+            uint[] public bonusCodes;
+            constructor() public {
+                owner = msg.sender; 
+                bonusCodes.length--;
+            }
+            function modifyBonusCode(uint index, uint update) public {
+                require(index < bonusCodes.length);
+                bonusCodes[index] = update;
+            }
+          }
+          ```
+        </textarea></section>
+
+        <section data-markdown><textarea data-template>
+          ### Array Index Calculation
+          - Data for array stored at slot 1 is stored at x:
+            - ethers.utils.keccak256(ethers.utils.padZeros([0x1],32))
+          - Maximum storage size = n = 2^256 - 1
+          - Last array index i = n - x
+          - Array index j which will overwrite storage slot k:
+            - j = n - x + k
+        </textarea></section>
+
+        <section data-markdown><textarea data-template>
+          ### Solidity v0.6
+          - <a href="https://solidity.readthedocs.io/en/v0.6.2/060-breaking-changes.html#solidity-v0-6-0-breaking-changes" target="_blank">Breaking changes</a>
+          - Array length is read only: <a href="https://github.com/ethereum/solidity/issues/3515" target="_blank">issue 3515</a>
+          - Use pop() to remove array element
+          - Fix array issue related to length manipulation
+        </textarea></section>
+
+        <section data-markdown><textarea data-template>
+          ### Mapping in Storage
+          - the value for a mapping key k is located at:
+            - keccak256(k . p)
+            - where "." is concatenation
+        </textarea></section>
+
+        <section data-markdown><textarea data-template>
+          ### Mapping Example
+
+        </textarea></section>
+
+        <section data-markdown><textarea data-template>
+          ### Bytes and String in Storage
+          - short (data less than 32 bytes)
+            - data is in the same slot where the length is
+            - lowest-order byte stores length * 2
+          - long (data more than 31 bytes)
+            - first slot stores length * 2 + 1
+        </textarea></section>
+
+        <section data-markdown><textarea data-template>
+          ### Bytes in Storage Example
+          ```
+          bytes bytesData = "aabbcc";
+          function getBytes() public view returns(bytes32) {
+              assembly {
+                  mstore(0, sload(bytesData_slot))
+                  return(0, 32)
+              }
+          }
+          ```
+        </textarea></section>
+        <section data-markdown>
+          <textarea data-template>
+            ## Contract Code
+            - need assembly to use extcodesize and extcodecopy
+            ```
+              function GetCodeAt(address _addr) public view returns (bytes memory o_code) {
+                  assembly {
+                      let size := extcodesize(_addr) // code size
+                      o_code := mload(0x40)  // free memory pointer
+                      mstore(0x40, add(o_code, and(add(add(size, 0x20), 0x1f), not(0x1f))))
+                      mstore(o_code, size)   // code length
+                      extcodecopy(_addr, add(o_code, 0x20), 0, size) // copy code
+                  }
+                }
+            ```
+          </textarea>
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+            ## Contract Hash
+            - EXTCODEHASH
+            - <a href="https://eips.ethereum.org/EIPS/eip-1052" target="_blank">Introduced by EIP-1052</a>
+            - Openzepplin <a href="https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/Address.sol#L24" target="_blank">isContract()</a>  utility function
+            -
+            ```
+            function isContract(address account) internal view      
+            returns (bool) {    
+              bytes32 codehash;
+              bytes32 accountHash = 0xc5d2...ad8045d85a470;   
+              assembly { codehash := extcodehash(account) }
+              return (codehash != accountHash && codehash != 0x0);        
+            }
+            ```
+          </textarea>
+        </section>
+        
+				<section data-markdown><textarea data-template>
+					## Lab
+					</textarea>
+				</section>
+			</div>
+		</div>
+
+		<script src="../../reveal.js/js/reveal.js"></script>
+
+		<script>
+			// More info about config & dependencies:
+			// - https://github.com/hakimel/reveal.js#configuration
+			// - https://github.com/hakimel/reveal.js#dependencies
+			Reveal.initialize({
+				width: "100%",
+				margin: 0,
+				maxScale: 0.9,
+				hash: true,
+				slideNumber: 'c/t',
+				dependencies: [
+					{ src: '../../reveal.js/plugin/markdown/marked.js'},
+					{ src: '../../reveal.js/plugin/markdown/markdown.js'},
+					{ src: '../../reveal.js/plugin/highlight/highlight.js' },
+					{ src: '../../reveal.js/plugin/notes/notes.js', async: true }
+				]
+			});
+		</script>
+	</body>
+</html>
