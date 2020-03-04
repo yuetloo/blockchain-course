@@ -1,0 +1,249 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Create2</title>
+
+		<link rel="stylesheet" href="../../reveal.js/css/reset.css">
+		<link rel="stylesheet" href="../../reveal.js/css/reveal.css">
+		<link rel="stylesheet" href="../../css/main.css">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="../../reveal.js/lib/css/monokai.css">
+		
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? '../../reveal.js/css/print/pdf.css' : '../../reveal.js/css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<section data-markdown><textarea data-template>
+					### State Channel + Create2
+					#### Advanced Smart Contract
+					<div class="author">Yuet Loo Wong</div>
+				</textarea></section>
+				<section data-markdown><textarea data-template>
+          ### Topics
+          - State Channel
+          - Counterfactual
+          - Create2
+          - EIP 1014
+        </textarea></section>
+        
+        <section data-markdown><textarea data-template>
+          ### Blockchain Scalability Problem
+          One of the major problem with blockchain is scalability problem
+          - Bitcoin: <a href="https://lightning.network/lightning-network-paper.pdf" target="_blank">7</a> tps
+          - Ethereum: <a href="https://bravenewcoin.com/insights/vitalik-ethereum-en-route-to-a-million-transactions-per-second" target="_blank">15</a> tps
+          - Visa: <a href="https://www.visa.com/blogarchives/us/2013/10/10/stress-test-prepares-visanet-for-the-most-wonderful-time-of-the-year/index.html" target="_blank">47,000</a> transactions per second (tps)
+        </textarea></section>
+
+        <section data-markdown><textarea data-template>
+          ### State Channel
+          - A blockchain scaling solution
+          - Conduct blockchain transactions off-chain
+          - Uses cryptographic signatures 
+            - to allow secure, instantaneous transactions
+          - <a href="https://www.jeffcoleman.ca/state-channels/" target="_blank">State channels by Jeff Coleman</a>
+        </textarea></section>
+
+        <section data-markdown><textarea data-template>
+          ### Payment Channel
+          - A specific type of state channel
+          - An <a href="https://solidity.readthedocs.io/en/v0.6.3/solidity-by-example.html#micropayment-channel" target="_blank">example</a> in solidity document
+          - Uses cryptographic signatures
+          - Make repeated transfers of Ether off-chain
+          - Each message specifies total Ether owed
+        </textarea></section>
+
+        <section data-markdown><textarea data-template>
+          ### Payment Steps
+          - Alice funds a smart contract with Ether
+            - This “opens” the payment channel
+          - Alice signs payment messages to Bob 
+            - This is repeated for each payment
+            - This is done off-chain
+          - Bob “closes” the payment channel
+            - This withdraws Ether
+        </textarea></section>
+
+        <section data-markdown><textarea data-template>
+          ### Creating signatures
+          - What to Sign
+            - The amount to be transferred
+            - Protection against replay attacks
+              - contract address
+        </textarea>
+        </section>
+
+        <section data-markdown><textarea data-template>
+          ### Create Signature (Javascript)
+          ```
+            function signPayment(amount, contractAddress) {
+              const messageDigest = ethers.utils.solidityKeccak256(
+                  ["uint256", "address"],
+                  [amount, contractAddress]
+              );
+
+              const signature = signingKey.signDigest(messageDigest);
+              return signature;
+            }
+        
+          ```
+
+        </textarea></section>
+
+        <section data-markdown><textarea data-template>
+          ### Verifying Signature (Contract)
+          ```
+          function isValidSignature(uint256 amount, uint8 v, bytes32 r, bytes32 s) 
+          public view returns(bool) {
+
+            // this recreates the message that was signed on the client
+            bytes32 message = keccak256(abi.encodePacked(amount, contractAddress));
+            signer = ecrecover(message, v, r, s);
+            return( signer == sender);
+          }
+```
+        </textarea>
+        </section>
+
+        <section data-markdown><textarea data-template>
+            ### Closing Channel
+            - Bob closes the channel to receive funds
+            - Bob uses last signed message to close channel
+            -
+            ```
+            function close(uint256 amount, uint8 v, bytes32 r, bytes32 s) 
+            public {
+              require(msg.sender == recipient);
+              require(isValidSignature(amount, v, r, s));
+      
+              recipient.transfer(amount);
+              selfdestruct(sender);
+            }
+            ```
+        </textarea></section>
+
+        <section data-markdown><textarea data-template>
+          ### Channel Timeout
+          - A way for Alice to recover escrowed funds
+          - An expiration is set at contract creation
+          - After expiry, Alice can recover fund
+          - Bob cannot receive fund after channel closure
+          -
+          ```
+          function claimTimeout() public {
+            require(now >= expiration);
+            selfdestruct(sender);
+          }
+          ```
+        </textarea></section>
+
+        <section data-markdown><textarea data-template>
+          ### Create2
+          - A low level way to create a contract
+          - create2(v, p, n, s)
+            - v is contract creation value in wei
+            - p is the memory location of the contract code 
+            - n is the length of contract code
+            - s is the salt
+          - <a href="https://eips.ethereum.org/EIPS/eip-1014" target="_blank">EIP 1014 Skinny CREATE2</a>
+          </textarea>
+        </section>
+
+        <section data-markdown><textarea data-template>
+          ### Create2 Motivation
+          Allows state channel interactions to be made with addresses that do not exist yet 
+          on-chain but can be relied on to eventually contain code
+        </textarea></section>
+
+        <section data-markdown><textarea data-template>
+          ### Counterfactual
+          Things that could happen on the blockchain, but don't
+        </textarea></section>
+        
+        <section data-markdown><textarea data-template>
+          ### Contract Address
+          - If create is used, the contract address is:
+            - keccak256(rlp([caller, nonce]))[12:]
+
+          - If create2 is used, the contract address is: 
+            - keccak256(0xff + caller + salt + keccak256(init_code))[12:]
+
+        </textarea></section>
+
+        <section data-markdown>
+          <textarea data-template>
+            ## Contract Code
+            - need assembly to use extcodesize and extcodecopy
+            ```
+              function GetCodeAt(address _addr) public view returns (bytes memory o_code) {
+                  assembly {
+                      let size := extcodesize(_addr) // code size
+                      o_code := mload(0x40)  // free memory pointer
+                      mstore(0x40, add(o_code, and(add(add(size, 0x20), 0x1f), not(0x1f))))
+                      mstore(o_code, size)   // code length
+                      extcodecopy(_addr, add(o_code, 0x20), 0, size) // copy code
+                  }
+                }
+            ```
+          </textarea>
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+            ## Contract Hash
+            - EXTCODEHASH
+            - <a href="https://eips.ethereum.org/EIPS/eip-1052" target="_blank">Introduced by EIP-1052</a>
+            - Openzepplin <a href="https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/Address.sol#L24" target="_blank">isContract()</a>  utility function
+            -
+            ```
+            function isContract(address account) internal view      
+            returns (bool) {    
+              bytes32 codehash;
+              bytes32 accountHash = 0xc5d2...ad8045d85a470;   
+              assembly { codehash := extcodehash(account) }
+              return (codehash != accountHash && codehash != 0x0);        
+            }
+            ```
+          </textarea>
+        </section>        
+
+				<section data-markdown><textarea data-template>
+					## Lab
+					</textarea>
+				</section>
+			</div>
+		</div>
+
+		<script src="../../reveal.js/js/reveal.js"></script>
+
+		<script>
+			// More info about config & dependencies:
+			// - https://github.com/hakimel/reveal.js#configuration
+			// - https://github.com/hakimel/reveal.js#dependencies
+			Reveal.initialize({
+				width: "100%",
+				margin: 0,
+				maxScale: 0.9,
+				hash: true,
+				slideNumber: 'c/t',
+				dependencies: [
+					{ src: '../../reveal.js/plugin/markdown/marked.js'},
+					{ src: '../../reveal.js/plugin/markdown/markdown.js'},
+					{ src: '../../reveal.js/plugin/highlight/highlight.js' },
+					{ src: '../../reveal.js/plugin/notes/notes.js', async: true }
+				]
+			});
+		</script>
+	</body>
+</html>
