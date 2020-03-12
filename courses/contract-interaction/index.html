@@ -204,6 +204,7 @@
 					<ul>
 						<li>Solidity generates code that saves variable values in their declaration order.</li>
 						<li>Variable <span class="highlight">first</span> was declared first, it’s stored in slot 0</li>
+                                  		<li>Items that need less than 32 bytes are packed together. <a href="https://solidity.readthedocs.io/en/v0.6.4/miscellaneous.html#layout-of-state-variables-in-storage" target="_blank"> See Rules</a></li>
 					</ul>
 					<pre><code data-trim>
 						contract Sample {
@@ -212,6 +213,18 @@
 						}
 					</code></pre>
 				</section>
+                                <section data-markdown><textarea data-template>
+					### Packed Storage
+					![Storage Layout](./storage.svg "Storage Layout")
+                                </textarea></section>
+				<section data-markdown><textarea data-template>
+					### Storage Demo
+					- <a href="https://github.com/ethereumgb/storage" target="_blank">Sample Contract</a>
+					- call the delegator.setVersion() with value 0xaabbcc
+					- check the values of val1,val2,val3,val4
+					- use storageAt() to get the storage value
+
+                                </textarea></section>
 
 				<section data-markdown><textarea data-template>
 					### Parity Bug
