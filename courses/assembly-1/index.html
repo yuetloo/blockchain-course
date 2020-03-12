@@ -40,18 +40,17 @@
 						- Benefits
 				</textarea></section>
 
-				<section data-markdown>
+				<section data-markdown><textarea data-template>
 					## Solidity Inline Assembly
-					- Low level language called [Yul](https://solidity.readthedocs.io/en/v0.6.2/yul.html)
-					- Provides low level access to the [EVM](https://solidity.readthedocs.io/en/v0.6.2/introduction-to-smart-contracts.html#index-6)
-					- Bypasses safety features and checks of Solidity
+					- Use Low level language called <a href="https://solidity.readthedocs.io/en/v0.6.2/yul.html" target="_blank">Yul</a>
+					- Provide low level access to the <a href="https://solidity.readthedocs.io/en/v0.6.2/introduction-to-smart-contracts.html#index-6" target="_blank">EVM</a>
+					- Bypass safety checks of Solidity
 					- Should only use it for tasks that need it
-				</section>
+				</textarea></section>
 
 				<section>
 					<h2>Assembly Block</h2>
-					<ul><li>Interleave Solidity statements with inline assembly</li>
-						<li>An inline assembly block is marked by <span class='highlight'>assembly { ... }</span></li>
+					<li>Marked by <span class='highlight'>assembly { ... }</span></li>
 					</ul> 					
 					<pre><code data-trim>
 						pragma solidity ^0.6.1;
@@ -80,10 +79,10 @@
 				</section>
 
 
-				<section data-markdown>
+				<section data-markdown><textarea data-template>
 					## Variables
 					- Use the "let" keyword to declare variables
-					- Variable is only visible within the block where it was defined
+					- Variable is only visible within the block 
 					- Variable will be assigned 0 if not initialized
 					-			
 					```
@@ -91,8 +90,9 @@
 							let x := 1
 							let y         // initialized to 0
 						}
+						// x and y not visible here
 					```
-				</section>
+				</textarea></section>
 
 				<section data-markdown><textarea data-template>
 					## Literals
@@ -110,15 +110,16 @@
 
 				<section data-markdown><textarea data-template>
 					### Function
-					- Takes arguments from stack and put results on stack
-					- Returning multiple values: let a, b := f(x)
+					- Take arguments from stack and put results on stack
+					- Can return multiple values: let a, b := f(x)
 					```
-					function Times2(int input) public pure returns(int result ) {
+					function callF(uint input) public pure returns(uint x, uint y) {
 						assembly {
-							function double(val) -> res {
-								res := shl(1, val)
+							function f(val) -> a, b {
+								a := add(val, 1)
+								b := val
 							}
-							result := double(input)
+							x, y := f(input)
 						}
 					}
 					```
@@ -151,16 +152,20 @@
 
 				<section data-markdown>
 					### Loop
-					- Loop is available for repeating operations
+					- Repeat operations
 					- break: exit the Loop
 					- continue: skip to next iteration
 
 					```
-							let x := 1
-							for { let i := 0 } lt(i, 0x3) { i := add(i, 1) } {
-								x := mul(x, 2)
-								if gt(x, 3) { break }
-							}
+    function lo(uint max) public pure returns(uint result) {
+        assembly {
+            for { let i := 0 } lt(i, 20) { i := add(i, 1) } {
+                if lt(i,3) { continue }
+                if gt(i, max) { break }
+                result := add(result,1)
+            }
+        }
+    }
 					```
 
 				</section>
@@ -213,26 +218,25 @@
 					</p>
 				</section>
 
-				<section data-markdown>
-					### Two's Complement
-					- Signed integers are represented in two's complement
-					- Two's complement of x = ~x + 1 = ~( x - 1)
-					- fundamental arithmetic operations are the same for signed and unsigned integers
-					- No negative 0
-				</section>
 
 				<section>
 					<h3> Bitwise Operations </h3>
 					<ul>
 						<li>Operate at the bit level</li>
 						<li>AND, OR, XOR, NOT, SHL, SHR, SAR</li>
-						<li>Check for power of 2: v && !(v & (v - 1))</li>
-						<li>x >> y == x * 2<sup>y</sup></li>
-						<li>x << y == x / 2<sup>y</sup></li>
+						<li>x >> y == x / 2<sup>y</sup></li>
+						<li>x << y == x * 2<sup>y</sup></li>
 						<li><a href="https://www.codementor.io/@erikeidt/bit-twiddling-understanding-bit-operations-iqj68ynb7" target="_blank">Bit Operations</a></li>
 						<li><a href="https://graphics.stanford.edu/~seander/bithacks.html#DetermineIfPowerOf2" target="_blank">Bit Twiddling Hacks</a></li>
 					</ul>
 				</section>
+				<section data-markdown><textarea data-template>
+					### Check for power of 2
+					- <a href="https://iq.opengenus.org/detect-if-a-number-is-power-of-2-using-bitwise-operators/" target="_blank">Explanation</a>
+					- v && !(v & (v - 1))
+					- Is 0 a power of 2?
+
+				</textarea></section>
 
 				<section data-markdown>
 					### Data Sanity
@@ -248,11 +252,26 @@
 					```
 				</section>
 
+				<section data-markdown><textarea data-template>
+					### Negative Integer
+					- Representation
+					  - <b>Signed bit</b>: leftmost bit as signed bit
+					  - <b>One's complement</b>: flip all bits
+					  - <b>Two's complement</b>: flip all bits + 1
+					- <a href="https://www.youtube.com/watch?v=4qH4unVtJkE" target="_blank">Explanation</a>
+				</textarea></section>
+
 				<section data-markdown>
-					### Signed Data
-					- Use signed builtin funcitons to process signed data
+					### Two's Complement
+					- Used in EVM
+					- Same arithmetic for signed and unsigned 
+					- No negative 0
+				</section>
+
+				<section data-markdown>
+					### Signed Functions
+					- Use to process signed data
 					- sdiv(), smod(), slt(), sgt(), sar(), signextend()
-					- Use `signextend` builtin function to clean signed data
 					- Would x be 100 or 99 from the following code?
 
 					```
@@ -266,12 +285,21 @@
 					```
 				</section>
 
-				<section data-markdown>
+				<section data-markdown><textarea data-template>
 					### signextend
-					- Sign extension
 					- Increase the number of bits of a binary number
 					- Preserve the sign (+/-) of the number
-				</section>	
+					- Extend 0x1110 to 0x11111110
+```
+    function f(uint8 x) public pure returns(bytes32 result) {
+        assembly {
+            let a := 0xfe
+            // x = 0 to extend 1 byte value
+            result := signextend(x, a) 
+        }
+    }
+```
+				</textarea></section>	
 				<section>
 					<h2>Gas Fee</h2>
 					<ul>
@@ -282,16 +310,27 @@
 					</ul>
 				</section>
 
+				<section data-markdown><textarea data-template>
+					### estimateGas (Javascript)
+					- estimate the gas cost of contract function
+					- <a href="https://www.trufflesuite.com/docs/truffle/getting-started/interacting-with-your-contracts#special-methods-on-truffle-contract-objects" target="_blank">truffle doc</a>
+```
+const gas = await contract.method.estimateGas(arg);     
+```
+				</textarea></section>
+
 				<section data-markdown>
 					### Benefits of Inline Assembly
-					- Code can be more gas efficient
+					- Code could be more gas efficient
+					    - Bypass Solidity safety checks
+					    - Less code, less gas fee
 					- Some operations only available in assembly
 				</section>
 
 				<section>
 					<h3>Lab</h3>
 					<p>
-						Following the instructions on the readme file of <a href="https://github.com/ethereumgb/assembly-loop" target="_blank">assembly-loop</a>
+					   Follow the instructions on the readme file of <a href="https://github.com/ethereumgb/assembly-loop" target="_blank">assembly-loop</a>
 					</p>
 				</section>
 			</div>
@@ -304,10 +343,11 @@
 			// - https://github.com/hakimel/reveal.js#configuration
 			// - https://github.com/hakimel/reveal.js#dependencies
 			Reveal.initialize({
-				width: "100%",
-				margin: 0,
-				maxScale: 0.9,
-				hash: true,
+                               controls: true,
+                                progress: true,
+                                center: true,
+                                hash: true,
+                                transition: 'slide',
 				slideNumber: 'c/t',
 				dependencies: [
 					{ src: '../../reveal.js/plugin/markdown/marked.js'},
