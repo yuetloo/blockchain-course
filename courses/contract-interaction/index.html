@@ -229,10 +229,11 @@
 			// - https://github.com/hakimel/reveal.js#configuration
 			// - https://github.com/hakimel/reveal.js#dependencies
 			Reveal.initialize({
-				width: "100%",
-				margin: 0,
-				maxScale: 0.9,
-				hash: true,
+                                controls: true,
+                                progress: true,
+                                center: true,
+                                hash: true,
+                                transition: 'slide', // none/fade/slide/convex/concave/zoom
 				slideNumber: 'c/t',
 				dependencies: [
 					{ src: '../../reveal.js/plugin/markdown/marked.js'},
