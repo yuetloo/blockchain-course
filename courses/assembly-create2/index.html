@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+
+    <title>Assembly and Create2</title>
+
+    <link rel="stylesheet" href="../../reveal.js/css/reset.css" />
+    <link rel="stylesheet" href="../../reveal.js/css/reveal.css" />
+    <link rel="stylesheet" href="../../css/main.css" />
+
+    <!-- Theme used for syntax highlighting of code -->
+    <link rel="stylesheet" href="../../reveal.js/lib/css/monokai.css" />
+
+    <!-- Printing and PDF exports -->
+    <script>
+      var link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.type = "text/css";
+      link.href = window.location.search.match(/print-pdf/gi)
+        ? "../../reveal.js/css/print/pdf.css"
+        : "../../reveal.js/css/print/paper.css";
+      document.getElementsByTagName("head")[0].appendChild(link);
+    </script>
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="slides">
+        <section data-markdown>
+          <textarea data-template>
+				### Assembly and Create2
+				#### Advanced Smart Contract
+				<div class="author">Yuet Loo Wong</div>
+			</textarea
+          >
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+			### Topics
+			- Assembly
+				- Memory
+				- Storage
+				- Array
+			- Create2
+
+			</textarea
+          >
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+					## Memory in EVM
+					- An expandable byte-array used to store data
+					- Expanding memory costs gas
+					- Memory is expanded by 256-bit
+					- Volatile, only available during execution
+					
+					</textarea
+          >
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+			## Memory Access Functions
+			- `MLOAD(o)`: load word from memory onto stack
+				- o: memory offset
+			- `MSTORE(o,v)`: store 256-bit word into memory
+				- o: memory offset
+				- v: value from stack
+			- `MSTORE8(o,v)`: store a byte into memory
+			</textarea
+          >
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+			## Solidity Memory Layout
+			- Solidity reserves memory slots as follow:
+				- 0x00 - 0x3f (64 bytes): scratch space, for short term usage
+				- 0x40 - 0x5f (32 bytes): free memory pointer
+				- 0x60 - 0x7f (32 bytes): zero for empty dynamic memory arrays
+				- 0x80: initial value of the free memory pointer
+			- <a href="https://solidity.readthedocs.io/en/v0.6.2/miscellaneous.html#layout-in-memory" target="_blank">Solidity Documentation</a> on Memory Layout
+			</textarea
+          >
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+			## Memory Example
+			
+			```
+			contract Sample {
+				function getData(uint value) public view returns (bytes32 output) {
+					assembly {
+						function allocate(length) -> pos {
+							let freePointer := 0x40
+							pos := mload(freePointer)
+							mstore(freePointer, add(pos,length))
+						}
+						
+						let dataSize := 0x20  // 32 bytes
+						let offset := allocate(dataSize)
+						mstore(offset, value)
+						return(offset, dataSize)
+					}
+				}
+			}
+			```
+					
+		</textarea
+          >
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+			  ### String and Bytes in Memory
+			  - length in first slot
+			  - elements start in second slot
+			  - elements are tightly packed
+			  - each element do not occupy 32 bytes 
+			  -
+			  ```
+			  function getFirstElement( bytes memory data )     
+				public pure returns(bytes32) {
+				assembly {
+					mstore(0, mload(add(data,32)))
+					return(0,32)
+				}
+			  }
+			  ```
+			</textarea
+          >
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+			## Storage
+			- State variables stored here
+			- Key-value store
+				- maps 256-bit words to 256-bit words
+			- Persistent storage in an account
+			</textarea
+          >
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+			## Storage Location
+			- <span class="highlight">_slot</span>: storage slot for the variable
+			- <span class="highlight">_offset</span>: byte offset for the variable
+			</textarea
+          >
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+			## SSTORE/SLOAD
+			- sstore(p,v): save a word to storage
+				- p: storage slot
+				- v: value to store
+			- sload(p): load a word from storage to stack
+			</textarea
+          >
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+			## State Variable Storage Layout
+			- Statically-sized variables stored from slot <span class="highlight">0</span>
+			- Variables less than 32 bytes are packed in a single slot
+			- Refer to other rules in <a href="https://solidity.readthedocs.io/en/v0.6.2/miscellaneous.html#layout-of-state-variables-in-storage" target="_blank">Solidity Documentation</a>
+			</textarea
+          >
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+			## Storage Demo
+			```
+			contract Sample {
+				uint8 data1 = 1;
+				uint8 data2 = 2;
+				uint8 data3 = 3;
+				uint8 data4 = 4;
+				
+				// get data3 and return it as ouput
+				function getData() public view returns(bytes32){
+					assembly {
+						let data := sload(data3_slot)
+						let result := and(shr(shl(3,data3_offset), data), 0xff)
+						mstore(0, result)
+						return(0,32)
+					}
+				}
+			}
+			```
+			</textarea
+          >
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+			## Array in Storage
+			- Array state variables
+			```
+			contract Sample {
+				bool[1] boolArray; // storage slot 0        
+				uint[] array;      // storage slot 1       
+			}
+			```
+        </textarea
+          >
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+				### Dynamic Array Storage Layout
+				- The array length is in the storage slot 'p'
+				- The nth-element is in slot: keccak256(p) + n
+			</textarea
+          >
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+          ### Storage Example
+          - <a href="https://github.com/yuetloo/EthereumSmartContracts/blob/master/DynamicArrayStorage.sol">Github Source</a>
+          ```
+          contract DynamicArrayStorage {
+              struct Store { uint8 x; uint8 y; }
+              Store[] data;            
+              constructor() public {
+                  data.push(Store(0x22, 0x33));
+              }
+              function getData(uint slot) public view returns (bytes32 result) {
+                assembly {
+                  mstore(0, data_slot)
+                  result := sload(add(keccak256(0,0x20),slot))
+                }        
+              }
+          }
+          ```
+        </textarea
+          >
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+          ### Dynamic Array Vunerability
+          - Doug Hoyte's <a href="https://github.com/Arachnid/uscc/tree/master/submissions-2017/doughoyte" target="_blank">Underhanded Solidity Contest</a>  Winning Solution
+          -
+          ```
+          contract MerdeToken {
+            address public owner;
+            uint[] public bonusCodes;
+            constructor() public {
+                owner = msg.sender; 
+                bonusCodes.length--; // what is the array length now?
+            }
+            function modifyBonusCode(uint index, uint update) public {
+                require(index < bonusCodes.length);
+                bonusCodes[index] = update;
+            }
+          }
+          ```
+        </textarea
+          >
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+          ### Exercise
+          - How to change the <span class="highlight">owner</span> in previous example?
+          - Hints:
+            - use modifyBonusCode()
+            - calculate array index j which will wrap around and end up in owner's slot k
+              - j = n - x + k
+            - max storage size = n = 2<sup>256</sup>
+            - storage slot for first array item = x = keccak256(array_slot)
+        </textarea
+          >
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+          ### Array Vunerability Fix 
+          - Solidity <a href="https://solidity.readthedocs.io/en/v0.6.2/060-breaking-changes.html#solidity-v0-6-0-breaking-changes" target="_blank">v0.6</a> no longer allows array.length--
+          - Use pop() to remove array element
+        </textarea
+          >
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+			### Create2 (<a href="https://eips.ethereum.org/EIPS/eip-1014" target="_blank">EIP 1014</a>)
+			- a new way to create contract
+			- <a href="https://blog.openzeppelin.com/getting-the-most-out-of-create2/" target="_blank">Getting the most out of create2</a>
+         </textarea
+          >
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+			### Create2 Solidity Example
+			- require solidity v0.6
+			```
+			contract D {
+				uint public x;
+				constructor(uint a) public payable {
+					x = a;
+				}
+			}
+			contract C {			
+				function createSalted(bytes32 salt, uint arg) 
+				public {
+					D d = new D{salt: salt}(arg);
+				}
+			}
+			```
+		</textarea
+          >
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+			### Create2 Assembly Example
+			```
+			contract Factory {
+				function deploy(bytes memory code, bytes32 salt) 
+				public returns (address addr) {
+				assembly {
+					addr := create2(0, add(code, 0x20), mload(code), salt)
+					if iszero(extcodesize(addr)) { revert(0, 0) }
+				}
+			  }
+			}
+			```
+		  </textarea
+          >
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+			### Contract Address
+			- If create is used, the contract address is:
+			  - keccak256(rlp([caller, nonce]))[12:]
+  
+			- If create2 is used, the contract address is: 
+			  - keccak256(0xff + caller + salt + keccak256(init_code))[12:]
+  
+		  </textarea
+          >
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+			  ### Why Create2 ?
+			  - Allow state channel interactions to be made with addresses that do not exist yet 
+			  on-chain but can be relied on to eventually contain code
+			  - Allow contract to be recreated at the same address after selfdestruct
+			</textarea
+          >
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+			### State Channel
+			- A blockchain scaling solution
+			  - Bitcoin: <a href="https://lightning.network/lightning-network-paper.pdf" target="_blank">7</a> tps (transactions per second)
+			  - Ethereum: <a href="https://bravenewcoin.com/insights/vitalik-ethereum-en-route-to-a-million-transactions-per-second" target="_blank">15</a> tps
+			  - Visa: <a href="https://www.visa.com/blogarchives/us/2013/10/10/stress-test-prepares-visanet-for-the-most-wonderful-time-of-the-year/index.html" target="_blank">47,000</a> tps
+			- Conduct blockchain transactions off-chain
+			- Uses cryptographic signatures 
+			  - to allow secure, instantaneous transactions
+			- <a href="https://www.jeffcoleman.ca/state-channels/" target="_blank">State channels by Jeff Coleman</a>
+		  </textarea
+          >
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+			### Payment Channel
+			- A type of state channel
+			- An <a href="https://solidity.readthedocs.io/en/v0.6.3/solidity-by-example.html#micropayment-channel" target="_blank">example</a> in solidity document
+			- Allow repeated instant fee-less payments between parties
+		  </textarea
+          >
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+			### Payment Steps
+			1. <b>Open</b> payment channel
+			   - Deposit Ether
+			2. <b>Transfer</b> payments off-chain
+			   - Send signed messages
+			3. <b>Close</b> payment channel
+			  - Withdraw Ether
+		  </textarea
+          >
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+			  ### Open Channel
+			  - Create contract and fund ether
+			  ```
+			  contract PaymentChannel {
+				address payable public sender;
+				address payable public recipient;
+				uint public expiration;
+				constructor (address payable _recipient, uint256 duration)
+					public payable
+				{
+					sender = msg.sender;
+					recipient = _recipient;
+					expiration = now + duration;
+				}
+			  }
+			  ```
+			</textarea
+          >
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+			### Send Signed Messages
+			- What to Sign?
+				- Amount to be transferred
+				- Contract address
+				 - Protect against cross-contract replay attacks		
+		  </textarea
+          >
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+			### Create Signature (Javascript)
+			```
+			  function signPayment(amount, contractAddress) {
+				const messageDigest = ethers.utils.solidityKeccak256(
+					["uint256", "address"],
+					[amount, contractAddress]
+				);
+  
+				const signature = signingKey.signDigest(messageDigest);
+				return signature;
+			  }
+		  
+			```
+  
+		  </textarea
+          >
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+			### Verify Signature (Contract)
+			```
+			function isValidSignature(uint256 amount, uint8 v, bytes32 r, bytes32 s) 
+			public view returns(bool) {
+  
+			  // this recreates the message that was signed on the client
+			  bytes32 message = keccak256(abi.encodePacked(amount, contractAddress));
+			  signer = ecrecover(message, v, r, s);
+			  return( signer == sender);
+			}
+  ```
+		  </textarea
+          >
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+			  ### Close Channel
+			  - Close the channel to receive funds
+			  - Use the last signed message to close channel
+			  -
+			  ```
+			  function close(uint256 amount, uint8 v, bytes32 r, bytes32 s) 
+			  public {
+				require(msg.sender == recipient);
+				require(isValidSignature(amount, v, r, s));
+		
+				recipient.transfer(amount);
+				selfdestruct(sender);
+			  }
+			  ```
+		  </textarea
+          >
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+			### Channel Timeout
+			- A way to recover escrowed funds
+			- An expiration is set at contract creation
+			-
+			```
+			function claimTimeout() public {
+			  require(now >= expiration);
+			  selfdestruct(sender);
+			}
+			```
+		  </textarea
+          >
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+			## Lab
+			</textarea
+          >
+        </section>
+      </div>
+    </div>
+
+    <script src="../../reveal.js/js/reveal.js"></script>
+
+    <script>
+      // More info about config & dependencies:
+      // - https://github.com/hakimel/reveal.js#configuration
+      // - https://github.com/hakimel/reveal.js#dependencies
+      Reveal.initialize({
+        controls: true,
+        progress: true,
+        center: true,
+        hash: true,
+        transition: "slide",
+        slideNumber: "c/t",
+        dependencies: [
+          { src: "../../reveal.js/plugin/markdown/marked.js" },
+          { src: "../../reveal.js/plugin/markdown/markdown.js" },
+          { src: "../../reveal.js/plugin/highlight/highlight.js" },
+          { src: "../../reveal.js/plugin/notes/notes.js", async: true }
+        ]
+      });
+    </script>
+  </body>
+</html>
