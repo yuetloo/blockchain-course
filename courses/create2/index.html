@@ -88,12 +88,13 @@
           ### Create Signature (Javascript)
           ```
             function signPayment(amount, contractAddress) {
-              const messageDigest = ethers.utils.solidityKeccak256(
+              const digest = ethers.utils.solidityKeccak256(
                   ["uint256", "address"],
                   [amount, contractAddress]
               );
 
-              const signature = signingKey.signDigest(messageDigest);
+              const arrayDigest = ethers.utils.arrayify(digest);
+              const signature = wallet.signMessage(arrayDigest);
               return signature;
             }
         
@@ -108,8 +109,10 @@
           public view returns(bool) {
 
             // this recreates the message that was signed on the client
-            bytes32 message = keccak256(abi.encodePacked(amount, contractAddress));
-            signer = ecrecover(message, v, r, s);
+            
+            bytes32 hash = keccak256(abi.encodePacked(amount, contractAddress));
+            bytes32 message = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash));
+            address signer = ecrecover(message, v, r, s);
             return( signer == sender);
           }
 ```
@@ -218,10 +221,6 @@
           </textarea>
         </section>        
 
-				<section data-markdown><textarea data-template>
-					## Lab
-					</textarea>
-				</section>
 			</div>
 		</div>
 
