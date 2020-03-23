@@ -287,7 +287,7 @@ contract Sample {
          </textarea></section>
 
         <section data-markdown><textarea data-template>
-        ### Why another create?
+        ### Why Another Create?
         Need an easier way to `park` an address for a contract
         </textarea></section>
  
@@ -315,7 +315,7 @@ keccak256(0xff + caller + salt + keccak256(init_code))[12:]
         </textarea></section>
 
         <section data-markdown><textarea data-template>
-        ### Runtime bytecode
+        ### Runtime Bytecode
         - Contract code
           - No constructor and parameters
         - Stored on-chain
@@ -324,7 +324,7 @@ keccak256(0xff + caller + salt + keccak256(init_code))[12:]
         </textarea></section>
 
         <section data-markdown><textarea data-template>
-        ### Create2 inputs
+        ### Create2 Inputs
         - create2(v, p, l, s)
          - v: ether to be sent to the contract during creation
          - p: memory offset to the contract creation code
@@ -335,7 +335,7 @@ keccak256(0xff + caller + salt + keccak256(init_code))[12:]
 
         <section data-markdown>
           <textarea data-template>
-             ### Create2 use cases
+             ### Create2 Use Cases
              Use cases from <a href="https://blog.openzeppelin.com/getting-the-most-out-of-create2/" target="_blank">Getting the most out of create2</a>:
              - State channel 
              - Contract upgradability
@@ -378,7 +378,7 @@ contract Factory {
         </textarea></section>
 
         <section data-markdown><textarea data-template>
-        ### Create2 attack vector
+        ### Create2 Attack Vector
         Contracts created with create2 could be replaced with different logic at the same address
         </textarea></section>
 
