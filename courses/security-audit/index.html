@@ -1,0 +1,189 @@
+<!doctype html>
+<html>
+   <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+      <title>Contract Security Audit</title>
+
+      <link rel="stylesheet" href="../../reveal.js/css/reset.css">
+      <link rel="stylesheet" href="../../reveal.js/css/reveal.css">
+      <link rel="stylesheet" href="../../css/main.css">
+
+      <!-- Theme used for syntax highlighting of code -->
+      <link rel="stylesheet" href="../../reveal.js/lib/css/monokai.css">
+		
+      <!-- Printing and PDF exports -->
+      <script>
+         var link = document.createElement( 'link' );
+         link.rel = 'stylesheet';
+         link.type = 'text/css';
+         link.href = window.location.search.match( /print-pdf/gi ) ? '../../reveal.js/css/print/pdf.css' : '../../reveal.js/css/print/paper.css';
+         document.getElementsByTagName( 'head' )[0].appendChild( link );
+      </script>
+   </head>
+   <body>
+      <div class="reveal">
+         <div class="slides">
+            <section data-markdown><textarea data-template>
+               ### Smart Contract Security Audit
+               #### Advanced Smart Contract
+               <div class="author">Yuet Loo Wong</div>
+	    </textarea></section>
+
+            <section data-markdown><textarea data-template>
+               ### Topics
+               - Security Audit
+               - Audit Report
+               - Analysis Tools
+               - References
+	    </textarea></section>
+
+            <section data-markdown><textarea data-template>
+               ### Security Audit
+               An analysis of smart contracts in order to find security vulnerabilities, typically involves:
+               1. Specification analysis
+               1. Run tests
+               1. Run automated analysis tools
+               1. Manual analysis
+               1. Create audit report
+             
+	    </textarea></section>
+				
+            <section data-markdown><textarea data-template>
+               ### Audit Report
+               - Typically includes:
+                  - Disclaimer
+                     - Not guarantee bug free
+                  - What was audited, version
+                  - Findings
+                    - Severity: Critical, High, Low
+                  - Recommendations
+	    </textarea></section>
+
+            <section data-markdown><textarea data-template>
+               ### Sample Audit Reports
+               - <a href="https://github.com/EthereumCommonwealth/Auditing/issues/340#issuecomment-524348753" target="blank">Dai Security Audit Report</a>
+               - <a href="https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/audit/2018-10.pdf" target="blank">OpenZeppelin Security Audit Report</a>
+	    </textarea></section>
+
+            <section data-markdown><textarea data-template>
+               ### Security Tools
+               - Static Analyzer in Remix
+               - MythX in Remix or truffle
+               - <a href="https://consensys.github.io/smart-contract-best-practices/security_tools/" target="_blank">Security Tools</a>
+	    </textarea></section>
+
+            <section data-markdown><textarea data-template>
+               ### Manual Audit
+Automatic analysis tools is not reliable, give false positive and miss finding issues; manual auditing is still required
+	    </textarea></section>
+
+            <section data-markdown><textarea data-template>
+               ### Manual Audit Checklists
+               - Unit tests pass
+               - Test and main network have same or similar settings
+               - Use latest solidity compiler version if possible
+               - Review compiler and analysis tool warnings
+               - Check for common security issues
+	    </textarea></section>
+
+            <section data-markdown><textarea data-template>
+               ### Re-Entrancy
+               - Use <a href="https://solidity.readthedocs.io/en/v0.6.4/security-considerations.html#use-the-checks-effects-interactions-pattern" target="_blank">Checks-Effects-Interactions</a> pattern to fix the following re-entrancy issue
+```
+contract Game {
+    mapping(address => uint) shares;
+    function withdraw() public {
+        if (msg.sender.send(shares[msg.sender]))
+            shares[msg.sender] = 0;
+    }
+}
+```
+	    </textarea></section>
+
+            <section data-markdown><textarea data-template>
+            ### Warning Could be Bug
+            - the warning shown here is bug, == should be =
+            <img src="./warning.png"></img>
+	    </textarea></section>
+
+            <section data-markdown><textarea data-template>
+               ### Permission
+               - Functions should have proper permission checking to ensure only the authorized can run the functions
+```
+   function doAdminStuff() public {
+      require(msg.sender == admin);
+      // do stuff
+   }
+```
+	    </textarea></section>
+
+            <section data-markdown><textarea data-template>
+               ### Front Running
+               - ERC20 attack vector on Approve/TransferFrom
+                 - changing approval from 5 to 3 can end up allowing a total of 8 (5 + 3) tokens to be transfered
+                 - work around by approving 5, then 0, then 3
+
+	    </textarea></section>
+
+            <section data-markdown><textarea data-template>
+               ### Overflow/Underflow
+               - Happens when an arithmetic operation reaches the bound and gives the following results:
+                  - uint8(255) + uint8(1) == 0
+                  - uint8(0) - uint8(1) == 255
+               - Need to check againts these when doing arithmetic operations
+	    </textarea></section>
+
+            <section data-markdown><textarea data-template>
+               ### Delegate Calls
+               - Beware of the context the contract is in when delegate call is used
+               - This <a href="https://ethernaut.openzeppelin.com/level/0x68756ad5e1039e4f3b895cfaa16a3a79a5a73c59" target="_blank">example</a> shows a vulnerability that can be attacked to take ownership of the Delegation contract
+	    </textarea></section>
+
+            <section data-markdown><textarea data-template>
+               ### Denial of Service attacks
+               - The <a href="https://ethernaut.openzeppelin.com/level/0x32d25a51c4690960f1d18fadfa98111f71de5fa7" target="_blank">King</a> contract demonstrates the denial of service attack which can be fixed by using the <a href="https://solidity.readthedocs.io/en/v0.4.24/common-patterns.html#withdrawal-from-contracts" target="_blank">withdrawal</a> pattern
+	    </textarea></section>
+
+            <section data-markdown><textarea data-template>
+               ### Unexpected Contract Balance
+               - Contracts can be attacked if they strictly assume a specific balance
+               - Ether sent through selfdestruct will bypass constructor and fallback functions
+               - Contracts can be pre-funded with ether
+               - <a href="https://gist.github.com/vasa-develop/415a17c709d804a4d351485cd1b7c981#file-ethergame-sol" target="_blank">Example</a>
+	    </textarea></section>
+
+            <section data-markdown><textarea data-template>
+               ### References
+               - <a href="https://consensys.github.io/smart-contract-best-practices/recommendations/" target="_blank">Consensys Security Best Practices</a>
+               - <a href="https://swcregistry.io" target="_blank">Smart Contract Weakness Classification</a>
+               - <a href="https://ethernaut.openzeppelin.com/level/0xdf51a9e8ce57e7787e4a27dd19880fd7106b9a5c" target="_blank">Ethernaut Contract Hacking Game</a>
+               - <a href="https://hackernoon.com/hackpedia-16-solidity-hacks-vulnerabilities-their-fixes-and-real-world-examples-f3210eba5148#ad85" target="_blank">16 Solidity Hacks and Fixes</a>
+               - <a href="https://medium.com/hashex-blog/how-to-perform-your-first-smart-contract-audit-3d6883f44924" target="_blank">Smart contract security audit</a>
+               </textarea></section>
+         </div>
+      </div>
+
+      <script src="../../reveal.js/js/reveal.js"></script>
+      <script>
+         // More info about config & dependencies:
+         // - https://github.com/hakimel/reveal.js#configuration
+         // - https://github.com/hakimel/reveal.js#dependencies
+         Reveal.initialize({
+            controls: true,
+            progress: true,
+            center: true,
+            hash: true,
+            transition: 'slide',
+            slideNumber: 'c/t',
+            dependencies: [
+               { src: '../../reveal.js/plugin/markdown/marked.js'},
+               { src: '../../reveal.js/plugin/markdown/markdown.js'},
+               { src: '../../reveal.js/plugin/highlight/highlight.js' },
+               { src: '../../reveal.js/plugin/notes/notes.js', async: true }
+            ]
+         });
+      </script>
+   </body>
+</html>
