@@ -79,7 +79,7 @@
 			- Solidity reserves memory slots as follow:
 				- 0x00 - 0x3f (64 bytes): scratch space, for short term usage
 				- 0x40 - 0x5f (32 bytes): free memory pointer
-				- 0x60 - 0x7f (32 bytes): zero for empty dynamic memory arrays
+				- 0x60 - 0x7f (32 bytes): zero slot; initial value for dynamic memory arrays
 				- 0x80: initial value of the free memory pointer
 			- <a href="https://solidity.readthedocs.io/en/v0.6.2/miscellaneous.html#layout-in-memory" target="_blank">Solidity Documentation</a> on Memory Layout
 			</textarea></section>
@@ -302,16 +302,16 @@ contract Sample {
   
           - If create2 is used, the contract address is: 
 ```
-keccak256(0xff + caller + salt + keccak256(init_code))[12:]
+keccak256(0xff + caller + salt + keccak256(initcode))[12:]
 ```
 	</textarea></section>
 
         <section data-markdown><textarea data-template>
-        ### What is init-code?
+        ### What is initcode?
         - Contract creation code
         - Contract Constructor logic and parameters
         - Generate the contract runtime bytecode
-        - Also known as CreationCode 
+        - The bytecode in Remix "Compilation details" for a contract
         </textarea></section>
 
         <section data-markdown><textarea data-template>
@@ -337,14 +337,14 @@ keccak256(0xff + caller + salt + keccak256(init_code))[12:]
           <textarea data-template>
              ### Create2 Use Cases
              Use cases from <a href="https://blog.openzeppelin.com/getting-the-most-out-of-create2/" target="_blank">Getting the most out of create2</a>:
-             - State channel 
-             - Contract upgradability
-             - User Onboarding
+             - State channel/counterfactuality
+             - Contract upgrade
+             - User onboarding
 	</textarea></section>
 
         <section data-markdown>
           <textarea data-template>
-          ### Create2 Solidity Example
+          ### Create2 Example (Solidity)
           - require solidity v0.6
 ```
 contract D {
@@ -363,7 +363,7 @@ contract C {
 
         <section data-markdown>
           <textarea data-template>
-          ### Create2 Assembly Example
+          ### Create2 Example (Assembly)
 ```
 contract Factory {
    function deploy(bytes memory code, bytes32 salt) 
@@ -380,6 +380,15 @@ contract Factory {
         <section data-markdown><textarea data-template>
         ### Create2 Attack Vector
         Contracts created with create2 could be replaced with different logic at the same address
+        </textarea></section>
+
+        <section data-markdown><textarea data-template>
+        ### Upgrade: Create2 vs Proxy
+           - Create2 method is more gas efficient
+             - no extra delegate call
+           - Create2 is more advanced and complex
+           - Proxy pattern is more well-known
+             - simpler and easier to understand
         </textarea></section>
 
         <section data-markdown>
