@@ -144,6 +144,27 @@ contract Sample {
           >
         </section>
 
+        <section data-markdown><textarea data-template>
+           ## Slot and Offset Example
+           - Use _slot and _offset to get storage location
+```
+contract Sample {
+   uint8 data1 = 1;
+   uint8 data2 = 2;
+   uint8 data3 = 3;
+   uint8 data4 = 4;
+
+   function getSlotOffset() public pure
+      returns(uint slot, uint offset){
+      assembly {
+         slot   := data3_slot
+         offset := data3_offset
+      }
+   }
+}
+```
+        </textarea></section>
+
         <section data-markdown>
           <textarea data-template>
 			## SSTORE/SLOAD
