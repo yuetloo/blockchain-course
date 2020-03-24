@@ -178,7 +178,7 @@ contract Sample {
 
         <section data-markdown>
           <textarea data-template>
-			## State Variable Storage Layout
+			## Storage Layout
 			- Statically-sized variables stored from slot <span class="highlight">0</span>
 			- Variables less than 32 bytes are packed in one slot
 			- Refer to other rules in <a href="https://solidity.readthedocs.io/en/v0.6.2/miscellaneous.html#layout-of-state-variables-in-storage" target="_blank">Solidity Documentation</a>
@@ -187,7 +187,7 @@ contract Sample {
 
         <section data-markdown>
           <textarea data-template>
-             ## Storage Demo
+             ## Storage Example
 ```
    contract Sample {
       uint8 data1 = 1;
@@ -405,11 +405,13 @@ contract Factory {
 
         <section data-markdown><textarea data-template>
         ### Upgrade: Create2 vs Proxy
-           - Create2 method is more gas efficient
-             - no extra delegate call
-           - Create2 is more advanced and complex
-           - Proxy pattern is more well-known
+           - Create2 
+             - more gas efficient, no delegate call
+             - more complex, uses selfdestruct
+             - selfdestruct will wipe out storage
+           - <a href="https://github.com/ethereumgb/proxy-delegate/blob/master/contracts/ProxyDelegate.sol" target="_blank">Proxy</a> pattern is more well-known
              - simpler and easier to understand
+             - storage persists after upgrade
         </textarea></section>
 
         <section data-markdown>
