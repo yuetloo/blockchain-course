@@ -42,10 +42,10 @@
             <section data-markdown><textarea data-template>
                ### Security Audit
                An analysis of smart contracts in order to find security vulnerabilities, typically involves:
-               1. Specification analysis
+               1. Analyze specifications
                1. Run tests
                1. Run automated analysis tools
-               1. Manual analysis
+               1. Perform manual code audit
                1. Create audit report
              
 	    </textarea></section>
@@ -62,9 +62,16 @@
 	    </textarea></section>
 
             <section data-markdown><textarea data-template>
+             ### Issue Severity
+             - Critical: can cost unlimited amount of funds
+             - High: can cost limited amount of funds
+             - Low: minor problems or better solutions
+            </textarea></section>
+
+            <section data-markdown><textarea data-template>
                ### Sample Audit Reports
                - <a href="https://github.com/EthereumCommonwealth/Auditing/issues/340#issuecomment-524348753" target="blank">Dai Security Audit Report</a>
-               - <a href="https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/audit/2018-10.pdf" target="blank">OpenZeppelin Security Audit Report</a>
+               - <a href="https://github.com/OpenZeppelin/openzeppelin-contracts/tree/master/audit" target="blank">OpenZeppelin Security Audit Report</a>
 	    </textarea></section>
 
             <section data-markdown><textarea data-template>
@@ -80,88 +87,125 @@ Automatic analysis tools is not reliable, give false positive and miss finding i
 	    </textarea></section>
 
             <section data-markdown><textarea data-template>
-               ### Manual Audit Checklists
-               - Unit tests pass
-               - Test and main network have same or similar settings
-               - Use latest solidity compiler version if possible
-               - Review compiler and analysis tool warnings
-               - Check for common security issues
+               ### Audit Checklists
+               A list of common issues is a useful tool for security audit
 	    </textarea></section>
 
             <section data-markdown><textarea data-template>
-               ### Re-Entrancy
-               - Use <a href="https://solidity.readthedocs.io/en/v0.6.4/security-considerations.html#use-the-checks-effects-interactions-pattern" target="_blank">Checks-Effects-Interactions</a> pattern to fix the following re-entrancy issue
-```
-contract Game {
-    mapping(address => uint) shares;
-    function withdraw() public {
-        if (msg.sender.send(shares[msg.sender]))
-            shares[msg.sender] = 0;
-    }
-}
-```
+               ### Useful Checklists and References
+               - <a href="https://consensys.github.io/smart-contract-best-practices/recommendations/" target="_blank">Consensys Security Best Practices</a>
+               - <a href="https://swcregistry.io" target="_blank">Smart Contract Weakness Classification</a>
+               - <a href="https://blog.sigmaprime.io/solidity-security.html" target="_blank">Solidity Security: known attack vectors and fixes</a>
+               - <a href="https://github.com/ethereum/wiki/wiki/Safety" target="_blank">Ethereum Safety Wiki</a>
+               - <a href="https://medium.com/hashex-blog/how-to-perform-your-first-smart-contract-audit-3d6883f44924" target="_blank">Smart contract security audit</a>
+               - <a href="https://blockgeeks.com/guides/audit-smart-contract/#_The_Steps_for_a_Full_Smart_Contract_Audit" target="_blank">Blockgeeks Security Audit Checklists</a>
+               - <a href="https://ethernaut.openzeppelin.com/level/0xdf51a9e8ce57e7787e4a27dd19880fd7106b9a5c" target="_blank">Ethernaut Contract Hacking Game</a>
+               </textarea></section>
+
+            <section data-markdown><textarea data-template>
+               ### Check for Warnings
+               - Any compiler or analysis tool warnings?
+               - Warnings could be
+                 - false positive
+                 - bug
+                   - == should be =
+                  <img src="./warning.png"></img>
 	    </textarea></section>
 
             <section data-markdown><textarea data-template>
-            ### Warning Could be Bug
-            - the warning shown here is bug, == should be =
-            <img src="./warning.png"></img>
+               ### Testing
+               - Any test failures?
+               - Any function missing tests?
+	    </textarea></section>
+
+            <section data-markdown><textarea data-template>
+               ### Code Currency
+               - Use latest solidity compiler?
+                 - may have patches for security risks
+                 - solidity v0.6.0 changes
+                   - array.length-- is not allowed
+                   - <a href="https://swcregistry.io/docs/SWC-119#tokensalesol" target="_blank">state variable shadowing</a> not allowed
+	    </textarea></section>
+
+            <section data-markdown><textarea data-template>
+               ### External Calls
+               - Is there any state changes after external calls?
+                  - Is <a href="https://solidity.readthedocs.io/en/v0.6.4/security-considerations.html#use-the-checks-effects-interactions-pattern" target="_blank">Checks-Effects-Interactions</a> pattern used to avoid re-entrancy issue?
+               - Are errors in external calls <a href="https://www.dasp.co/#item-4" target="_blank">handled properly</a>?
+	    </textarea></section>
+
+            <section data-markdown><textarea data-template>
+               ### Denial of Service attacks
+               - Do external calls <a href="https://github.com/ethereum/wiki/wiki/Safety#favor-pull-over-push-for-external-calls" target="_blank">favor push over pull</a>?
+                 - push: 2 accounts, A pushes to B
+                 - pull: 1 account, A pulls from contract
+               - Is <a href="https://medium.com/@jgm.orinoco/why-use-the-withdrawal-pattern-d5255921ca2a" target="_blank">withdrawal</a> pattern being used?
 	    </textarea></section>
 
             <section data-markdown><textarea data-template>
                ### Permission
                - Functions should have proper permission checking to ensure only the authorized can run the functions
+               - <a href="https://swcregistry.io/docs/SWC-106" target="_blank">Unprotected selfdestruct</a>
 ```
-   function doAdminStuff() public {
-      require(msg.sender == admin);
-      // do stuff
+   function kill() public {
+      selfdestruct(msg.sender);
    }
 ```
 	    </textarea></section>
 
             <section data-markdown><textarea data-template>
+            ### Failure Preparation
+            - Can the contract <a href="https://github.com/ethereum/wiki/wiki/Safety#circuit-breakers-pause-contract-functionality" target="_blank">pause operation</a>?
+            - Can malicious actions be <a href="https://github.com/ethereum/wiki/wiki/Safety#speed-bumps-delay-contract-actions" target="_blank">delayed</a>?
+            - How are fund at risk managed?
+              - Can broken contract be <a href="https://github.com/ethereum/wiki/wiki/Safety#upgrading-broken-contracts" target="_blank">upgraded</a>?
+	    </textarea></section>
+
+            <section data-markdown><textarea data-template>
                ### Front Running
-               - ERC20 attack vector on Approve/TransferFrom
-                 - changing approval from 5 to 3 can end up allowing a total of 8 (5 + 3) tokens to be transfered
+               - Is there <a href="https://consensys.github.io/smart-contract-best-practices/known_attacks/#front-running" target="_blank">transaction ordering dependence</a>?
+                
+               - Insertion attack: ERC20 Approve/TransferFrom
+                 - changing approval from 5 to 3 may result in 8 (5 + 3) tokens transfered
                  - work around by approving 5, then 0, then 3
 
 	    </textarea></section>
 
             <section data-markdown><textarea data-template>
-               ### Overflow/Underflow
-               - Happens when an arithmetic operation reaches the bound and gives the following results:
+               ### Overflow
+               - Is there integer wraparound issue?
+               - When arithmetic reaches bound, it wraps
                   - uint8(255) + uint8(1) == 0
                   - uint8(0) - uint8(1) == 255
-               - Need to check againts these when doing arithmetic operations
+	    </textarea></section>
+
+            <section data-markdown><textarea data-template>
+               ### Division
+               - Is there division by zero?
+                 - EVM will revert
+               - Is there <a href="https://github.com/ethereum/wiki/wiki/Safety#beware-rounding-with-integer-division" target="_blank">rounding</a> issue?
 	    </textarea></section>
 
             <section data-markdown><textarea data-template>
                ### Delegate Calls
-               - Beware of the context the contract is in when delegate call is used
-               - This <a href="https://ethernaut.openzeppelin.com/level/0x68756ad5e1039e4f3b895cfaa16a3a79a5a73c59" target="_blank">example</a> shows a vulnerability that can be attacked to take ownership of the Delegation contract
-	    </textarea></section>
-
-            <section data-markdown><textarea data-template>
-               ### Denial of Service attacks
-               - The <a href="https://ethernaut.openzeppelin.com/level/0x32d25a51c4690960f1d18fadfa98111f71de5fa7" target="_blank">King</a> contract demonstrates the denial of service attack which can be fixed by using the <a href="https://solidity.readthedocs.io/en/v0.4.24/common-patterns.html#withdrawal-from-contracts" target="_blank">withdrawal</a> pattern
+               - Is the context used properly?
+               - Will the call cause <a href="https://ethernaut.openzeppelin.com/level/0x68756ad5e1039e4f3b895cfaa16a3a79a5a73c59" target="_blank">change of control</a>?
 	    </textarea></section>
 
             <section data-markdown><textarea data-template>
                ### Unexpected Contract Balance
-               - Contracts can be attacked if they strictly assume a specific balance
-               - Ether sent through selfdestruct will bypass constructor and fallback functions
-               - Contracts can be pre-funded with ether
-               - <a href="https://gist.github.com/vasa-develop/415a17c709d804a4d351485cd1b7c981#file-ethergame-sol" target="_blank">Example</a>
+               - Any strict assumption of contract balance?
+                  - Ether can be <a href="https://consensys.github.io/smart-contract-best-practices/known_attacks/#forcibly-sending-ether-to-a-contract" target="_blank">forced sent to a contract</a>
+                  - Contract can be pre-funded with ether
+               - Attack on this <a href="https://gist.github.com/vasa-develop/415a17c709d804a4d351485cd1b7c981#file-ethergame-sol" target="_blank">example</a> can make claimReward() to always fail
+	    </textarea></section>
+            <section data-markdown><textarea data-template>
+               ### Bounty Program
+               - Used to get community to audit code
+                 - <a href="https://consensys.github.io/smart-contract-best-practices/bug_bounty_list" target="_blank">Consensys Bug Bounty List</a>
+                 - <a href="https://bounty.ethereum.org" target="_blank">Ethereum Bounty Program</a>
 	    </textarea></section>
 
-            <section data-markdown><textarea data-template>
-               ### References
-               - <a href="https://consensys.github.io/smart-contract-best-practices/recommendations/" target="_blank">Consensys Security Best Practices</a>
-               - <a href="https://swcregistry.io" target="_blank">Smart Contract Weakness Classification</a>
-               - <a href="https://ethernaut.openzeppelin.com/level/0xdf51a9e8ce57e7787e4a27dd19880fd7106b9a5c" target="_blank">Ethernaut Contract Hacking Game</a>
-               - <a href="https://hackernoon.com/hackpedia-16-solidity-hacks-vulnerabilities-their-fixes-and-real-world-examples-f3210eba5148#ad85" target="_blank">16 Solidity Hacks and Fixes</a>
-               - <a href="https://medium.com/hashex-blog/how-to-perform-your-first-smart-contract-audit-3d6883f44924" target="_blank">Smart contract security audit</a>
-               </textarea></section>
          </div>
       </div>
 
