@@ -63,8 +63,8 @@
 
             <section data-markdown><textarea data-template>
              ### Issue Severity
-             - Critical: can cost unlimited amount of funds
-             - High: can cost limited amount of funds
+             - Critical: can cost unlimited amount of users' funds
+             - High: can cost limited amount of users' funds
              - Low: minor problems or better solutions
             </textarea></section>
 
@@ -135,11 +135,17 @@ Automatic analysis tools is not reliable, give false positive and miss finding i
 	    </textarea></section>
 
             <section data-markdown><textarea data-template>
-               ### Denial of Service attacks
+               ### Denial of Service (DoS)
                - Do external calls <a href="https://github.com/ethereum/wiki/wiki/Safety#favor-pull-over-push-for-external-calls" target="_blank">favor push over pull</a>?
                  - push: 2 accounts, A pushes to B
                  - pull: 1 account, A pulls from contract
                - Is <a href="https://medium.com/@jgm.orinoco/why-use-the-withdrawal-pattern-d5255921ca2a" target="_blank">withdrawal</a> pattern being used?
+	    </textarea></section>
+
+            <section data-markdown><textarea data-template>
+              ### DoS With Block Gas Limit
+              - Cost of function execution exceeds block gas limit
+              - <a href="https://swcregistry.io/docs/SWC-128#dos_numbersol" target="_blank">Here</a> is an example of modifying large array leads to denial of service attack
 	    </textarea></section>
 
             <section data-markdown><textarea data-template>
@@ -154,11 +160,12 @@ Automatic analysis tools is not reliable, give false positive and miss finding i
 	    </textarea></section>
 
             <section data-markdown><textarea data-template>
-            ### Failure Preparation
+            ### Failure Handling
             - Can the contract <a href="https://github.com/ethereum/wiki/wiki/Safety#circuit-breakers-pause-contract-functionality" target="_blank">pause operation</a>?
             - Can malicious actions be <a href="https://github.com/ethereum/wiki/wiki/Safety#speed-bumps-delay-contract-actions" target="_blank">delayed</a>?
             - How are fund at risk managed?
               - Can broken contract be <a href="https://github.com/ethereum/wiki/wiki/Safety#upgrading-broken-contracts" target="_blank">upgraded</a>?
+              - Are users given grace period to upgrade?
 	    </textarea></section>
 
             <section data-markdown><textarea data-template>
